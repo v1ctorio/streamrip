@@ -102,6 +102,16 @@ class DeezerClient(Client):
         )
         pl_metadata["tracks"] = pl_tracks["data"]
         pl_metadata["track_total"] = len(pl_tracks["data"])
+
+        # Gather the actual album name for each track in the playlist
+        for track in pl_metadata["tracks"]:
+            album_id = track["album"]["id"]
+            try:
+                album_metadata = await asyncio.to_thread(self.client.api.get_album, album_id)
+                track["album"]["title"] = album_metadata["title"]
+            except Exception as e:
+                logger.error(f"Error fetching album for track {track['id']}: {e}")
+
         return pl_metadata
 
     async def get_artist(self, item_id: str) -> dict:
@@ -213,8 +223,7 @@ class DeezerClient(Client):
         info_bytes.extend(url_bytes)
         info_bytes.extend(b"\xa4")
         # Pad the bytes so that len(info_bytes) % 16 == 0
-        padding_len = 16 - (len(info_bytes) % 16)
-        info_bytes.extend(b"." * padding_len)
+        info_bytes.extend(b"." * (16 - (len(info_bytes) % 16)))
 
         path = binascii.hexlify(
             AES.new(b"jo6aey6haid2Teih", AES.MODE_ECB).encrypt(info_bytes),
