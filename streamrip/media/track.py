@@ -146,6 +146,10 @@ class PendingTrack(Pending):
             self.db.set_failed(source, "track", self.id)
             return None
 
+        # Update the album name in the metadata for each track in the playlist
+        if self.album.album != meta.album.album:
+            meta.album.album = self.album.album
+
         quality = self.config.session.get_source(source).quality
         try:
             downloadable = await self.client.get_downloadable(self.id, quality)
